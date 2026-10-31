@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Fantasy Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Dark-first "pick card" look (PrizePicks-style): near-black page, raised cards, purple accent,
+   condensed display numbers. Light theme only via data-theme="light". */
+:root {
+  color-scheme: dark;
+  --page: #080b12; --surface: #121722; --surface2: #1a2130; --ink: #f2f5fb; --ink2: #aab3c5; --muted: #737d92;
+  --grid: #222a3a; --axis: #313b50; --ring: rgba(255,255,255,0.08);
+  --fp: #3b82f6; --fp2: #7cb3ff; --gold: #f5c542; --accent-grad: linear-gradient(135deg, #ffd76a 0%, #e0a91c 100%);
+  --opp: #d95926; --good: #2ee68a; --warn: #fbbf24; --serious: #fb923c; --crit: #ff4d6d;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: #f3f5f9; --surface: #ffffff; --surface2: #eef1f7; --ink: #0d1220; --ink2: #47506a; --muted: #838ca3;
+  --grid: #e2e6ef; --axis: #c9cfdc; --ring: rgba(13,18,32,0.10);
+  --fp: #2563eb; --fp2: #3b82f6; --opp: #eb6834; --gold: #c9930a; --good: #0f9f5a; --crit: #d61f45;
+}
+* { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+main, .card, .card > div { min-width: 0; overflow-wrap: anywhere; }
+body { margin: 0; color: var(--ink); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(1200px 500px at 50% -200px, color-mix(in srgb, var(--fp) 22%, transparent), transparent 70%), var(--page);
+  background-attachment: fixed;
+  font: 15px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 0 16px 64px; }
+.top { position: sticky; top: 0; z-index: 5; margin: 0 -16px 12px; padding: 12px 16px 10px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--page) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--ring); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+h1 { font: 800 26px/1 var(--display); letter-spacing: .5px; text-transform: uppercase; margin: 0;
+  background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+h2 { font: 700 19px/1.1 var(--display); text-transform: uppercase; letter-spacing: .6px;
+  margin: 28px 0 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sub { color: var(--ink2); font-size: 13px; }
+.muted { color: var(--muted); font-size: 12px; }
+.fresh { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; color: var(--ink2);
+  background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 10px 14px; }
+.fresh > span:nth-child(odd) { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .6px; align-self: center; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { appearance: none; border: 1px solid var(--ring); background: var(--surface2); color: var(--ink);
+  border-radius: 999px; padding: 7px 14px; font: 600 13px Inter, system-ui, sans-serif; text-decoration: none; cursor: pointer;
+  transition: transform .08s ease, filter .15s ease; }
+.btn:active { transform: scale(.96); }
+.btn.primary { background: var(--accent-grad); border-color: transparent; color: #1a1300; box-shadow: 0 4px 18px -6px var(--gold); }
+h2 .btn { font-size: 12px; padding: 4px 10px; text-transform: none; letter-spacing: 0; }
+.card { position: relative; background: linear-gradient(180deg, var(--surface2), var(--surface) 70px);
+  border: 1px solid var(--ring); border-radius: 18px; padding: 12px 14px; margin: 10px 0;
+  box-shadow: 0 10px 30px -18px rgba(0,0,0,.8); }
+.card header { display: flex; gap: 12px; align-items: center; cursor: pointer; }
+.card header .who { flex: 1; min-width: 0; }
+.card header .tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.shot { position: relative; flex: none; width: 52px; height: 52px; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--fp) 40%, var(--surface2)), var(--surface2));
+  border: 2px solid color-mix(in srgb, var(--fp) 50%, transparent); }
+.shot img.head { position: absolute; left: 50%; bottom: -2px; width: 76px; transform: translateX(-50%); }
+.shot img.logo { position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; }
+.shot .ini { position: absolute; inset: 0; display: grid; place-items: center; font: 700 18px var(--display); color: var(--ink2); }
+.name { display: block; font: 700 18px/1.1 var(--display); letter-spacing: .3px; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card header .sub { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.chip { font: 600 11px/1.6 Inter, system-ui, sans-serif; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--ring);
+  color: var(--ink2); background: var(--surface2); white-space: nowrap; }
+.chip.Out { border-color: transparent; color: #fff; background: var(--crit); }
+.chip.Questionable, .chip.Doubtful, .chip.Probable, .chip.amber { border-color: transparent; color: #1a1300; background: var(--warn); }
+.chip.disc { opacity: .7; border-style: dashed; background: transparent; }
+select.chip { width: 2.8em; font: inherit; font-size: 12px; cursor: pointer; }
+select.chip.set { width: auto; }
+.count { font: 700 12px/1 Inter, system-ui, sans-serif; padding: 4px 8px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); letter-spacing: 0; }
+.nums { display: grid; grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr)); gap: 6px; margin: 12px 0 20px; }
+.stat { background: color-mix(in srgb, var(--page) 55%, transparent); border: 1px solid var(--ring); border-radius: 12px;
+  padding: 6px 4px; text-align: center; min-width: 0; }
+.stat span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { display: block; font: 700 22px/1.05 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); }
+.stat.hero { background: color-mix(in srgb, var(--gold) 12%, transparent); border-color: color-mix(in srgb, var(--gold) 50%, transparent); }
+.stat.hero b { color: var(--gold); }
+.stat.hero b { font-size: 28px; }
+.stat .d { display: inline-block; margin-left: 4px; font: 700 12px Inter, system-ui, sans-serif; vertical-align: 4px; }
+svg { display: block; width: 100%; overflow: visible; }
+.chart { display: grid; grid-template-columns: 26px minmax(0, 1fr) 54px; gap: 6px; margin-top: 4px; }
+.yax { position: relative; font: 600 10px/1 Inter, system-ui, sans-serif; color: var(--muted); font-variant-numeric: tabular-nums; }
+.yax span { position: absolute; transform: translateY(-50%); white-space: nowrap; }
+.yax.l span { right: 0; }
+.yax.r span { left: 0; font-weight: 700; }
+.yax.r span.avg { color: var(--gold); }
+.cap { min-height: 16px; font-size: 12px; color: var(--ink2); }
+.legend { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+details > summary { cursor: pointer; color: var(--ink2); font-size: 13px; margin-top: 6px; }
+details > summary::marker { color: var(--gold); }
+.news { font-size: 13px; margin: 6px 0; color: var(--ink2); }
+.news a { color: var(--fp2); text-decoration: none; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 8px; }
+th { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 600; }
+th, td { text-align: right; padding: 5px 4px; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+.tablewrap { overflow-x: auto; }
+input[type=search] { width: 100%; padding: 12px 16px; font: inherit; border-radius: 999px;
+  border: 1px solid var(--ring); background: var(--surface); color: var(--ink); outline: none; }
+input[type=search]:focus { border-color: var(--fp); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fp) 30%, transparent); }
+ul.plain { padding-left: 18px; margin: 4px 0; font-size: 14px; }
+ul.plain li { margin: 4px 0; }
+.tout { border-left: 3px solid var(--crit); padding: 6px 0 6px 10px; margin: 10px 0; }
+.tout .who { font-weight: 700; font-size: 14px; }
+.tout ol { padding-left: 20px; margin: 4px 0; font-size: 13px; }
+.tout li { margin: 3px 0; }
+.chip.fa { border-color: var(--fp); color: var(--fp2); }
+.chip.mine { border-color: transparent; color: #1a1300; background: var(--gold); }
+.err { color: var(--crit); }
+.card.board { background: radial-gradient(400px 160px at 50% 0, color-mix(in srgb, var(--gold) 22%, transparent), transparent), var(--surface);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent); padding: 16px 14px; }
+.mu { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 4px 12px; align-items: center; text-align: center; }
+.mu .sub { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; }
+.mu .big { font: 800 clamp(26px, 8vw, 34px)/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mu .spread { font: 800 22px/1 var(--display); padding: 6px 12px; border-radius: 999px; margin-top: 4px;
+  background: color-mix(in srgb, currentColor 14%, transparent); }
+.pos { color: var(--good); } .neg { color: var(--crit); }
+td.capped { color: var(--muted); text-decoration: line-through; }
+.daybar { display: inline-block; height: 8px; border-radius: 999px; background: var(--fp); vertical-align: middle; }
+.daybar.opp { background: var(--muted); }
+.board th, .board td { white-space: nowrap; overflow-wrap: normal; }
+.board tr.day { cursor: pointer; }
+/* Past weeks: score vs expected final over the week (me = --fp, opp = --opp; solid = score, dashed = expected) */
+.wk { position: relative; touch-action: pan-y; }
+.wk text { font: 600 10px Inter, system-ui, sans-serif; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.wk text.end { font: 700 12px var(--display); fill: var(--ink); }
+.wk .tip { position: absolute; top: 0; pointer-events: none; background: var(--surface2); border: 1px solid var(--ring);
+  border-radius: 10px; padding: 6px 8px; font-size: 12px; color: var(--ink2); white-space: nowrap; box-shadow: 0 6px 18px -8px rgba(0,0,0,.8); }
+.wk .tip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.key { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+.key.dash { border-top-style: dashed; }
+.fresh.drop { margin: 6px 0 4px; }
+/* Two pages: tap a tab or swipe sideways */
+.top { flex-wrap: wrap; }
+.tabs { flex-basis: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px;
+  background: var(--surface); border: 1px solid var(--ring); border-radius: 999px; }
+.tabs button { appearance: none; border: 0; background: transparent; color: var(--ink2); cursor: pointer;
+  font: 700 14px/1 var(--display); text-transform: uppercase; letter-spacing: .6px; padding: 8px 0; border-radius: 999px; }
+.tabs button[aria-selected="true"] { background: var(--surface2); color: var(--gold); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent); }
+.tabs .count { margin-left: 6px; padding: 2px 6px; font-size: 11px; }
+.page.in-l { animation: in-l .18s ease-out; }
+.page.in-r { animation: in-r .18s ease-out; }
+@keyframes in-l { from { transform: translateX(-28px); opacity: .3; } }
+@keyframes in-r { from { transform: translateX(28px); opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .page.in-l, .page.in-r { animation: none; } }
+details.card > summary { list-style: none; display: flex; gap: 8px; align-items: center; margin: 0; color: var(--ink); }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card[open] > summary { margin-bottom: 8px; }
+details.card > summary .caret { display: inline-block; width: 14px; color: var(--gold); transition: transform .15s ease; }
+details.card[open] > summary .caret { transform: rotate(90deg); }
+summary .chip.pos, summary .chip.neg { margin-left: auto; }
+.board tr.day .caret { display: inline-block; width: 14px; font-size: 14px; color: var(--gold); transition: transform .15s ease; }
+.board tr.day.open .caret { transform: rotate(90deg); }
+.board tr.day.open td { border-bottom-color: transparent; }
+.board tr.dayinfo td { white-space: normal; overflow-wrap: anywhere; text-align: left; padding: 0 4px 10px 16px; }
+.board td.bars { width: 100%; min-width: 60px; }
+.note { color: var(--muted); font-size: 12px; margin: 6px 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>Fantasy Scout</h1>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/SAKlober/fantasy/actions/workflows/daily-digest.yml" target="_blank" rel="noopener">↻ Refresh</a>
+      <button class="btn" id="reload" type="button">Reload</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" type="button" aria-selected="true">My team</button>
+      <button role="tab" type="button" aria-selected="false">Moves</button>
+    </div>
+  </div>
+  <div id="fresh" class="fresh"></div>
+  <p class="note">Refresh updates injuries, news and box scores (1–3 min, then Reload). Rosters and FA status come from the laptop snapshot only.</p>
+  <div id="app"><p class="muted">Loading…</p></div>
+</main>
+<script>
+"use strict";
+const GCOLS = ["date","opp","started","min","fp","pts","reb","ast","stl","blk","to","fgm","fga","ftm","fta","tpm"];
+const STALE_H = 6; // heuristic (spec Q7): about half an NBA day
+let DATA = null, BUILD = "", META = null, QUERY = "";
+
+// Overlay edits (spec Q7b): my own roster marks, this browser only. An edit is dropped once a
+// snapshot newer than it arrives, so ESPN wins as soon as it has caught up.
+const OV_KEY = "overlay-v1";
+function ovRead() { try { return JSON.parse(localStorage.getItem(OV_KEY)) || {}; } catch { return {}; } }
+function ovWrite(o) { try { localStorage.setItem(OV_KEY, JSON.stringify(o)); } catch {} }
+function ovLive() {
+  const o = ovRead(), snap = new Date(META.snapshot_at), live = {};
+  for (const [id, e] of Object.entries(o)) if (new Date(e.at) > snap) live[id] = e;
+  if (Object.keys(live).length !== Object.keys(o).length) ovWrite(live);
+  return live;
+}
+function ovSet(id, status) {
+  const o = ovLive();
+  if (status) o[id] = { status, at: new Date().toISOString() }; else delete o[id];
+  ovWrite(o);
+  render();
+}
+const statusOf = id => (ovLive()[id] || {}).status || DATA.players[id]?.status;
+const logs = {};
+
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v; else if (k.startsWith("on")) el.addEventListener(k.slice(2), v); else el.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+const S = "http://www.w3.org/2000/svg";
+function s(tag, attrs) { const el = document.createElementNS(S, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; }
+const fmt = v => v == null ? "—" : (Math.round(v * 10) / 10).toString();
+function ago(iso) {
+  if (!iso) return "—";
+  const m = (Date.now() - new Date(iso)) / 60000;
+  return m < 60 ? `${Math.round(m)}m ago` : m < 2880 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
+}
+const ageH = iso => iso ? (Date.now() - new Date(iso)) / 3600000 : Infinity;
+
+// FP bars (solid = started, hollow = bench) + dashed season avg + dotted preseason. Tap a bar for its numbers.
+function fpChart(games, avg, pre, cap) {
+  const W = 300, H = 56, n = Math.max(games.length, 10); // fixed 10-slot minimum so 1 game isn't one fat bar
+  const vals = games.map(g => g.fp);
+  const hi = Math.max(10, ...vals, avg || 0, pre || 0), lo = Math.min(0, ...vals);
+  const y = v => H - (v - lo) / (hi - lo) * H;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", height: H, role: "img",
+    "aria-label": `Fantasy points, last ${games.length} games` });
+  svg.append(s("line", { x1: 0, x2: W, y1: y(0), y2: y(0), stroke: "var(--axis)", "vector-effect": "non-scaling-stroke" }));
+  const bw = W / n, gap = Math.min(2, bw * 0.2);
+  games.forEach((g, i) => {
+    const top = y(Math.max(g.fp, 0)), bot = y(Math.min(g.fp, 0));
+    const r = s("rect", { x: i * bw + gap / 2, y: top, width: bw - gap, height: Math.max(bot - top, 1),
+      fill: g.started ? "var(--fp)" : "none", stroke: "var(--fp)", "stroke-width": 1.5, "vector-effect": "non-scaling-stroke" });
+    svg.append(r);
+  });
+  const ref = (v, dash, col) => v != null && svg.append(s("line", { x1: 0, x2: W, y1: y(v), y2: y(v), stroke: col,
+    "stroke-width": 1.5, "stroke-dasharray": dash, "vector-effect": "non-scaling-stroke" }));
+  ref(avg, "5 4", "var(--gold)");
+  ref(pre, "1 3", "var(--muted)");
+  svg.addEventListener("pointerdown", e => {
+    const b = svg.getBoundingClientRect(), i = Math.min(n - 1, Math.max(0, Math.floor((e.clientX - b.left) / b.width * n)));
+    const g = games[i];
+    if (g) cap.textContent = `${g.date} vs ${g.opp}: ${fmt(g.fp)} FP, ${fmt(g.min)} min, ${g.started ? "started" : "bench"}`;
+  });
+  const ticks = [hi, Math.round(hi / 2), 0].concat(lo < 0 ? [lo] : []).map(v => ({ v: Math.round(v), y: y(v) }));
+  return frame(svg, H, ticks, [{ v: avg, y: avg != null && y(avg), t: `avg ${fmt(avg)}`, cls: "avg" },
+    { v: pre, y: pre != null && y(pre), t: `pre ${fmt(pre)}` }]);
+}
+
+// Wraps a chart: tick numbers in a left gutter, reference-line labels in a right gutter.
+// Right labels closer than 11px get pushed apart so avg and pre don't overlap.
+function frame(svg, H, ticks, tags) {
+  const lab = (v, top, cls) => h("span", { class: cls || null, style: `top:${top}px` }, v);
+  const rs = tags.filter(t => t.v != null).sort((a, b) => a.y - b.y);
+  rs.forEach((t, i) => { if (i && t.y - rs[i - 1].y < 11) t.y = rs[i - 1].y + 11; });
+  return h("div", { class: "chart" },
+    h("div", { class: "yax l", style: `height:${H}px` }, ticks.map(t => lab(t.v, t.y))),
+    svg,
+    h("div", { class: "yax r", style: `height:${H}px` }, rs.map(t => lab(t.t, t.y, t.cls))));
+}
+
+function minChart(mins, avg) {
+  const W = 300, H = 30, n = mins.length, slots = Math.max(n, 10); // same slots as fpChart so games line up
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
+    "aria-label": `Minutes, last ${n} games` });
+  svg.setAttribute("preserveAspectRatio", "none");
+  if (!n) return frame(svg, H, [], []);
+  const hi = Math.max(40, ...mins), x = i => (i + 0.5) * W / slots, y = v => H - v / hi * H;
+  if (n === 1) svg.append(s("line", { x1: x(0), x2: x(0), y1: y(mins[0]), y2: y(mins[0]), stroke: "var(--ink2)",
+    "stroke-width": 8, "stroke-linecap": "round", "vector-effect": "non-scaling-stroke" }));
+  if (avg != null) svg.append(s("line", { x1: 0, x2: W, y1: y(avg), y2: y(avg), stroke: "var(--muted)",
+    "stroke-dasharray": "5 4", "vector-effect": "non-scaling-stroke" }));
+  svg.append(s("polyline", { points: mins.map((m, i) => `${x(i)},${y(m)}`).join(" "), fill: "none",
+    stroke: "var(--ink2)", "stroke-width": 2, "stroke-linejoin": "round", "vector-effect": "non-scaling-stroke" }));
+  return frame(svg, H, [{ v: Math.round(hi), y: 0 }], [{ v: avg, y: avg != null && y(avg), t: `${fmt(avg)} min` }]);
+}
+
+const legend = () => h("div", { class: "legend" },
+  ["▮ started", "▯ bench", "┄ season avg (gold)", "··· preseason", "line = minutes"].map(t => h("span", {}, t)));
+const fill = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter(k => k != null && k !== false));
+
+function lastGames(p) {
+  return p.fp10.map((fp, i) => ({ fp, min: p.min10[i], started: p.st10[i], date: p.d10[i], opp: "" }));
+}
+
+async function playerLog(id) {
+  if (!logs[id]) {
+    const r = await fetch(`players/${id}.json?v=${BUILD}`);
+    logs[id] = r.ok ? (await r.json()).map(row => Object.fromEntries(GCOLS.map((k, i) => [k, row[i]]))) : [];
+  }
+  return logs[id];
+}
+
+// ESPN CDN art keyed by espn_id / team abbr; initials show through if an image 404s.
+const LOGO = { GSW: "gs", NOP: "no", NYK: "ny", SAS: "sa", UTA: "utah", WAS: "wsh" };
+function headshot(id, p) {
+  const hide = e => e.target.remove();
+  const ini = p.name.split(" ").map(w => w[0]).slice(0, 2).join("");
+  return h("div", { class: "shot" }, h("span", { class: "ini" }, ini),
+    h("img", { class: "head", alt: "", loading: "lazy", src: `https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`, onerror: hide }),
+    p.team ? h("img", { class: "logo", alt: "", loading: "lazy",
+      src: `https://a.espncdn.com/i/teamlogos/nba/500/${(LOGO[p.team] || p.team).toLowerCase()}.png`, onerror: hide }) : null);
+}
+
+function card(id, extra) {
+  const p = DATA.players[id];
+  if (!p) return h("div", { class: "card" }, `Unknown player ${id}`);
+  const chips = [], st = statusOf(id), edited = !!ovLive()[id];
+  if (p.inj) chips.push(h("span", { class: `chip ${p.inj.status}`, title: p.inj.reason || "" }, (p.inj.status === "Out" ? "⛔ " : "⚠️ ") + p.inj.status));
+  if (p.opp) chips.push(h("span", { class: "chip" }, "opponent"));
+  if (st && st !== "mine") chips.push(h("span", { class: "chip" }, st === "fa" ? `FA ${fmt(p.own)}%` : "rostered"));
+  if (edited) chips.push(h("span", { class: "chip disc" }, "edited"));
+  // Closed menu shows "⋯" (narrow) until an edit is set, then widens to show the chosen mark.
+  const mark = h("select", { "aria-label": "Mark roster status", class: edited ? "chip set" : "chip", onclick: e => e.stopPropagation(),
+    onchange: e => ovSet(id, e.target.value) },
+    [["", "⋯"], ["mine", "Mark mine"], ["rostered", "Mark taken"], ["fa", "Mark FA"]].map(([v, t]) =>
+      h("option", { value: v, selected: edited && v === st ? "" : null }, t)));
+  chips.push(mark);
+  const cap = h("div", { class: "cap" });
+  const d = p.l5 != null && p.fppg != null ? p.l5 - p.fppg : null;
+  const stat = (label, v, cls, ...more) => h("div", { class: `stat ${cls || ""}` }, h("b", {}, v, ...more), h("span", {}, label));
+  const body = h("div", {},
+    h("div", { class: "nums" },
+      stat("L5 FPPG", fmt(p.l5), "hero", d != null && Math.abs(d) >= 0.5 ? h("span", { class: `d ${d > 0 ? "pos" : "neg"}` }, d > 0 ? "▲" : "▼") : null),
+      stat("Season", fmt(p.fppg)), stat("Pre", fmt(p.pre)), stat("Min", fmt(p.min))),
+    p.gp ? [fpChart(lastGames(p), p.fppg, p.pre, cap), cap, minChart(p.min10, p.min)] : h("p", { class: "muted" }, "No games logged yet."),
+    extra || null);
+  const full = h("div", {});
+  const el = h("div", { class: "card" },
+    h("header", { onclick: () => expand() },
+      headshot(id, p),
+      h("div", { class: "who" }, h("span", { class: "name" }, p.name), h("span", { class: "sub" }, `${p.team} · ${(p.pos || []).join("/")} · ${p.gp} GP`)),
+      h("div", { class: "tags" }, chips)),
+    p.inj && p.inj.reason ? h("div", { class: "muted" }, p.inj.reason) : null,
+    body, full);
+  let open = false;
+  async function expand() {
+    open = !open;
+    full.replaceChildren();
+    if (!open || !p.gp) return;
+    full.append(h("p", { class: "muted" }, "Loading season…"));
+    const games = await playerLog(id);
+    const cap2 = h("div", { class: "cap" });
+    const rows = games.slice().reverse().map(g => h("tr", {}, h("td", {}, g.date.slice(5)), h("td", {}, g.opp),
+      ...["min", "fp", "pts", "reb", "ast", "stl", "blk", "to"].map(k => h("td", {}, fmt(g[k]))),
+      h("td", {}, `${g.fgm}-${g.fga}`), h("td", {}, g.started ? "S" : "")));
+    fill(full, h("div", { class: "muted" }, "Full season"), fpChart(games, p.fppg, p.pre, cap2), cap2,
+      minChart(games.map(g => g.min), p.min), legend(),
+      h("div", { class: "tablewrap" }, h("table", {},
+        h("tr", {}, ...["Date", "Opp", "Min", "FP", "Pts", "Reb", "Ast", "Stl", "Blk", "TO", "FG", ""].map(t => h("th", {}, t))), rows)));
+  }
+  return el;
+}
+
+// Expected spread (spec Q8). Python ships ros + games left (weighted for injuries) per player;
+// the daily lineup and sums happen here so overlay edits count. Mirrors dashboard/spread.py best_lineup.
+const SLOTS = ["PG", "SG", "SF", "PF", "C", "G", "F"], UTIL = 3, NSTART = SLOTS.length + UTIL;
+const FITS = { PG: ["PG", "G"], SG: ["SG", "G"], SF: ["SF", "F"], PF: ["PF", "F"], C: ["C"] };
+// Exact best legal lineup: DP over (fixed slots filled as a bitmask, UTIL used). Returns the started entries.
+function bestLineup(entries, pts) {
+  let best = new Map([["0,0", { v: 0, keys: [] }]]);
+  for (const e of entries) {
+    const fits = new Set((e[1].pos || []).flatMap(p => (FITS[p] || []).map(sl => SLOTS.indexOf(sl))));
+    const nxt = new Map(best);
+    for (const [k, { v, keys }] of best) {
+      const [mask, u] = k.split(",").map(Number), w = v + pts(e);
+      const opts = [...fits].filter(i => !(mask & 1 << i)).map(i => [mask | 1 << i, u]).concat(u < UTIL ? [[mask, u + 1]] : []);
+      for (const st of opts) {
+        const sk = st.join(","), cur = nxt.get(sk);
+        if (!cur || w > cur.v) nxt.set(sk, { v: w, keys: keys.concat([e]) });
+      }
+    }
+    best = nxt;
+  }
+  return [...best.values()].reduce((a, b) => b.v > a.v ? b : a).keys;
+}
+function sideDays(ids, days) {
+  const ps = ids.map(id => [id, DATA.players[id]]).filter(([, p]) => p && p.ros && p.gl);
+  return days.map(d => {
+    const active = ps.filter(([, p]) => p.gl[d]).sort((a, b) => b[1].ros - a[1].ros);
+    const used = bestLineup(active, ([, p]) => p.ros * p.gl[d]).sort((a, b) => b[1].ros - a[1].ros);
+    const benched = active.filter(e => !used.includes(e));
+    return { d, pts: used.reduce((t, [, p]) => t + p.ros * p.gl[d], 0), used, capped: benched,
+      empty: NSTART - used.length };
+  });
+}
+
+// "MM-DD" -> "Tue (10/20)". Season runs Oct-Apr, so Jul-Dec dates belong to the start year.
+function dayName(md) {
+  const b = new Date(META.built_at), start = b.getUTCFullYear() - (b.getUTCMonth() < 6 ? 1 : 0);
+  const [m, d] = md.split("-").map(Number);
+  const wd = new Date(Date.UTC(m >= 7 ? start : start + 1, m - 1, d)).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  return `${wd} (${m}/${d})`;
+}
+
+function matchupSection(mine) {
+  const mu = META.matchup, wk = DATA.week;
+  if (!mu || !wk) return null;
+  const oppIds = Object.keys(DATA.players).filter(id => DATA.players[id].opp);
+  const me = sideDays(mine, wk.days), op = sideDays(oppIds, wk.days);
+  const sum = a => a.reduce((t, x) => t + x.pts, 0);
+  const meF = mu.me.pts + sum(me), opF = mu.opp.pts + sum(op), spread = meF - opF;
+  const hi = Math.max(1, ...me.map(x => x.pts), ...op.map(x => x.pts));
+  const bar = (v, cls) => h("span", { class: `daybar ${cls}`, style: `width:${v > 0 ? Math.max(2, Math.round(v / hi * 100)) : 0}%` });
+  const who = (x, d) => [...x.used.map(([id, p]) => h("span", {}, `${p.name} ${fmt(p.ros * p.gl[d])}`, p.gl[d] < 1 ? " (GTD)" : "")),
+    ...x.capped.map(([, p]) => h("span", { class: "muted" }, h("s", {}, p.name), x.empty ? " no slot" : " benched"))].flatMap((e, i) => i ? [", ", e] : [e]);
+  const rows = wk.days.map((d, i) => [d, me[i], op[i]]).filter(([, a, b]) => a.used.length || b.used.length);
+  return [
+    h("h2", {}, "Matchup", h("span", { class: "count" }, `Week ${mu.period}`)),
+    h("div", { class: "card board" },
+      h("div", { class: "mu" },
+        h("div", {}, h("div", { class: "sub" }, "Me"), h("div", { class: "big" }, fmt(meF))),
+        h("div", {}, h("div", { class: "sub" }, "Expected spread"),
+          h("div", { class: `spread ${spread >= 0 ? "pos" : "neg"}` }, `${spread >= 0 ? "+" : "−"}${fmt(Math.abs(spread))}`)),
+        h("div", {}, h("div", { class: "sub" }, mu.opp.name), h("div", { class: "big" }, fmt(opF)))),
+      h("p", { class: "muted" }, `Expected final = actual so far (${fmt(mu.me.pts)}–${fmt(mu.opp.pts)}, as of snapshot) + ros × games left. ` +
+        `Best legal lineup per day (PG, SG, SF, PF, C, G, F, 3 UTIL); players who can't fit sit even if slots are open. Out = 0, Questionable = 0.5 next game, ESPN OUT = rest of week (heuristics). My side uses overlay edits.`),
+      rows.length ? h("p", { class: "muted" }, "Day rows count only games not yet started at the snapshot; finished games are in the actual score.") : null,
+      rows.length ? h("div", { class: "tablewrap" }, h("table", {},
+        h("tr", {}, ...["Day", "", "Me (left)", "Opp (left)", "Δ"].map(t => h("th", {}, t))),
+        rows.flatMap(([d, a, b]) => {
+          // Tap a day row to show who is still to play that day (detail row toggles under it).
+          const detail = h("tr", { class: "dayinfo", hidden: "" }, h("td", { colspan: 5 },
+            h("div", { class: "news" }, `${a.used.length} vs ${b.used.length} in lineup` + (a.capped.length ? `, ${a.capped.length} of mine on bench` : "") +
+              (a.empty && a.capped.length ? `, ${a.empty} slot${a.empty > 1 ? "s" : ""} empty by position` : "")),
+            h("div", { class: "news" }, h("b", {}, "Me: "), a.used.length || a.capped.length ? who(a, d) : "none"),
+            h("div", { class: "news" }, h("b", {}, "Opp: "), b.used.length || b.capped.length ? who(b, d) : "none")));
+          const row = h("tr", { class: "day", onclick: () => { detail.hidden = !detail.hidden; row.classList.toggle("open", !detail.hidden); } },
+            h("td", {}, h("span", { class: "caret" }, "▸"), dayName(d)), h("td", { class: "bars" }, bar(a.pts, ""), h("br"), bar(b.pts, "opp")),
+            h("td", {}, `${fmt(a.pts)} (${a.used.length})`), h("td", {}, `${fmt(b.pts)} (${b.used.length})`),
+            h("td", { class: a.pts - b.pts >= 0 ? "pos" : "neg" }, fmt(a.pts - b.pts)));
+          return [row, detail];
+        }))) :
+        h("p", { class: "muted" }, "No games left this week."))];
+}
+
+// Past weeks: actual score and expected final at each logged snapshot (dashboard/history.py).
+// Expected final dips while games are in progress: a started game counts only the points scored so far.
+const ET_FMT = { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" };
+function weekChart(w) {
+  const main = document.querySelector("main");
+  const W = Math.max(260, (main ? main.clientWidth : 360) - 32 - 30), H = 190, L = 34, R = 44, T = 8, B = 20;
+  const t0 = Date.parse(w.ticks[0]), t1 = Date.parse(w.ticks[w.ticks.length - 1]);
+  const pts = w.pts.map(r => ({ t: Date.parse(r[0]), v: r.slice(1, 5), src: r[5] }));
+  const hi = Math.max(100, ...pts.flatMap(p => p.v));
+  const step = hi > 1200 ? 500 : hi > 600 ? 250 : 100, top = Math.ceil(hi / step) * step;
+  const x = t => L + (t - t0) / (t1 - t0) * (W - L - R), y = v => T + (1 - v / top) * (H - T - B);
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
+    "aria-label": `Week score and expected final over the week, me vs ${w.opp}` });
+  for (let v = 0; v <= top; v += step) {
+    svg.append(s("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: v ? "var(--grid)" : "var(--axis)" }));
+    const tx = s("text", { x: L - 6, y: y(v) + 3, "text-anchor": "end" }); tx.textContent = v; svg.append(tx);
+  }
+  w.ticks.forEach((iso, i) => {
+    const tt = Date.parse(iso);
+    if (i && i < w.ticks.length - 1) svg.append(s("line", { x1: x(tt), x2: x(tt), y1: T, y2: H - B, stroke: "var(--grid)" }));
+    if (i < w.ticks.length - 1) {
+      const tx = s("text", { x: (x(tt) + x(Date.parse(w.ticks[i + 1]))) / 2, y: H - 5, "text-anchor": "middle" });
+      tx.textContent = new Date(tt + 12 * 3600e3).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" });
+      svg.append(tx);
+    }
+  });
+  // [value index, color, dashed]: 0 my score, 1 opp score, 2 my expected, 3 opp expected
+  [[2, "var(--fp)", 1], [3, "var(--opp)", 1], [0, "var(--fp)", 0], [1, "var(--opp)", 0]].forEach(([k, col, dash]) =>
+    svg.append(s("polyline", { points: pts.map(p => `${x(p.t).toFixed(1)},${y(p.v[k]).toFixed(1)}`).join(" "), fill: "none",
+      stroke: col, "stroke-width": 2, "stroke-linejoin": "round", "stroke-dasharray": dash ? "5 4" : "none", opacity: dash ? 0.85 : 1 })));
+  const last = pts[pts.length - 1];
+  if (last) {  // direct labels on the latest score, nudged apart if they'd overlap
+    let a = y(last.v[0]), b = y(last.v[1]);
+    if (Math.abs(a - b) < 13) { const m = (a + b) / 2, d = a <= b ? -1 : 1; a = m + d * 6.5; b = m - d * 6.5; }
+    [[a, last.v[0]], [b, last.v[1]]].forEach(([yy, v]) => {
+      const tx = s("text", { x: x(last.t) + 6, y: yy + 4, class: "end" }); tx.textContent = fmt(v); svg.append(tx);
+    });
+  }
+  const cross = s("line", { y1: T, y2: H - B, stroke: "var(--ink2)", "stroke-width": 1, visibility: "hidden" });
+  const dots = [0, 1, 2, 3].map(k => s("circle", { r: 4, fill: k % 2 ? "var(--opp)" : "var(--fp)", stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }));
+  svg.append(cross, ...dots);
+  const tip = h("div", { class: "tip", hidden: "" });
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const p = pts.reduce((a, b) => Math.abs(x(b.t) - px) < Math.abs(x(a.t) - px) ? b : a);
+    cross.setAttribute("x1", x(p.t)); cross.setAttribute("x2", x(p.t)); cross.setAttribute("visibility", "visible");
+    dots.forEach((d, k) => { d.setAttribute("cx", x(p.t)); d.setAttribute("cy", y(p.v[k])); d.setAttribute("visibility", "visible"); });
+    const when = p.src === "final" ? "Final" : new Date(p.t).toLocaleString("en-US", ET_FMT) + " ET";
+    tip.replaceChildren(h("div", {}, when),
+      h("div", {}, h("span", { class: "key", style: "color:var(--fp)" }), "Me ", h("b", {}, fmt(p.v[0])), " · exp ", h("b", {}, fmt(p.v[2]))),
+      h("div", {}, h("span", { class: "key", style: "color:var(--opp)" }), `${w.opp} `, h("b", {}, fmt(p.v[1])), " · exp ", h("b", {}, fmt(p.v[3]))));
+    tip.hidden = false;
+    const left = x(p.t) * r.width / W;
+    tip.style.left = `${Math.min(Math.max(0, left - tip.offsetWidth / 2), r.width - tip.offsetWidth)}px`;
+  };
+  const hide = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); };
+  svg.addEventListener("pointermove", show);
+  svg.addEventListener("pointerdown", show);
+  svg.addEventListener("pointerleave", hide);
+  return h("div", { class: "wk" }, svg, tip);
+}
+
+function pastWeeks() {
+  const past = DATA.past || {}, periods = Object.keys(past).map(Number).sort((a, b) => b - a);
+  if (!periods.length) return null;
+  return [
+    h("h2", {}, "Past weeks", h("span", { class: "count" }, periods.length)),
+    periods.map((n, i) => {
+      const w = past[n], fin = w.pts.some(r => r[5] === "final"), last = w.pts[w.pts.length - 1];
+      const me = last[1], op = last[2];
+      const rebuilt = w.pts.some(r => r[5] === "rebuilt");
+      return h("details", { class: "card", open: i === 0 ? "" : null },
+        h("summary", {}, h("span", { class: "caret" }, "▸"), h("b", {}, `Week ${n} vs ${w.opp}`),
+          h("span", { class: `chip ${me > op ? "pos" : "neg"}` }, `${fin ? (me > op ? "W " : "L ") : "so far "}${fmt(me)}–${fmt(op)}`)),
+        h("div", { class: "legend" },
+          h("span", {}, h("span", { class: "key", style: "color:var(--fp)" }), "Me"),
+          h("span", {}, h("span", { class: "key", style: "color:var(--opp)" }), w.opp),
+          h("span", {}, h("span", { class: "key", style: "color:var(--ink2)" }), "score"),
+          h("span", {}, h("span", { class: "key dash", style: "color:var(--ink2)" }), "expected final")),
+        weekChart(w),
+        h("p", { class: "muted" }, "Expected final = score + ros × games left, as the Matchup card computes it (no overlay edits). " +
+          "It dips while games are in progress, since a started game counts only the points scored so far." +
+          (rebuilt ? " Rows marked rebuilt were recomputed later from saved snapshots, with ESPN injury status only (no NBA report)." : "")),
+        h("details", {}, h("summary", {}, `Table (${w.pts.length} snapshots)`), h("div", { class: "tablewrap" }, h("table", {},
+          h("tr", {}, ...["Time (ET)", "", "Me", "Opp", "Exp me", "Exp opp"].map(c => h("th", {}, c))),
+          w.pts.map(r => h("tr", {}, h("td", {}, r[5] === "final" ? "Final" : new Date(r[0]).toLocaleString("en-US", ET_FMT)),
+            h("td", { class: "muted" }, r[5] === "final" ? "" : r[5]), ...r.slice(1, 5).map(v => h("td", {}, fmt(v)))))))));
+    })];
+}
+
+// Upgrades (rules W1, W3, E4): free agents whose ros clears the add bar over one of my droppable players.
+// Droppable = not Core or Middle tier (E4); players added later are droppable by default.
+const CORE = new Set(["Victor Wembanyama", "Amen Thompson", "Austin Reaves", "Darius Garland", "Dyson Daniels"]);
+const MIDDLE = new Set(["Ty Jerome", "Donovan Clingan", "Caleb Wilson", "Alex Sarr"]);
+const W1_BAR = 3, W1_BAR_POS = 2, W1_MIN = 26, C_CAP = 4, UPG_SHOW = 6;
+const isC = p => (p.pos || []).includes("C");
+const l5min = p => { const m = (p.min10 || []).slice(-5); return m.length ? m.reduce((a, b) => a + b, 0) / m.length : null; };
+const statLine = p => p.gp ? `FPPG ${fmt(p.fppg)} · L5 ${fmt(p.l5)} · ${fmt(p.min)} min` : "no games yet";
+function upgrades(mine) {
+  const drop = mine.map(id => DATA.players[id]).filter(p => p && p.ros != null && !CORE.has(p.name) && !MIDDLE.has(p.name))
+    .sort((a, b) => a.ros - b.ros);
+  const nC = mine.filter(id => DATA.players[id] && isC(DATA.players[id])).length;
+  const out = [];
+  for (const [id, p] of Object.entries(DATA.players)) {
+    const st = statusOf(id), lm = l5min(p);
+    if ((st && st !== "fa") || !p.gp || p.ros == null || lm == null || lm < W1_MIN) continue;
+    const pool = isC(p) && nC >= C_CAP ? drop.filter(isC) : drop;  // W3: at the C cap a C add has to drop a C
+    const bar = (p.pos || []).some(x => x === "C" || x === "PF") ? W1_BAR_POS : W1_BAR;
+    const over = pool.filter(q => p.ros - q.ros >= bar);
+    if (over.length) out.push({ id, p, lm, over });
+  }
+  return { drop, out: out.sort((a, b) => b.p.ros - a.p.ros) };
+}
+function upgradesSection(mine, snapH) {
+  const { drop, out } = upgrades(mine);
+  const short = n => n.replace(/^(\S)\S*\s/, "$1. ");
+  return [
+    h("h2", {}, "⬆️ Upgrades · W1", h("span", { class: "count" }, out.length), snapH > STALE_H ? h("span", { class: "chip amber" }, "⚠️ verify FA in ESPN app") : null),
+    h("p", { class: "muted" }, `Free agents whose ros beats one of my droppable players by ≥${W1_BAR} (≥${W1_BAR_POS} for C/PF) and who average ≥${W1_MIN} min over their last 5 (rule W1). ` +
+      `Droppable = not Core or Middle tier (E4). At ${C_CAP} C a C add is compared only with my Cs (W3). Sorted by ros. Before adding, check W2: minutes from a teammate's short injury don't count.`),
+    drop.length ? h("div", { class: "fresh drop" }, drop.flatMap(q => [h("span", {}, short(q.name)),
+      h("span", {}, h("b", {}, `ros ${fmt(q.ros)}`), ` · ${statLine(q)}`)])) : h("p", { class: "muted" }, "No droppable players with a ros."),
+    out.length ? out.slice(0, UPG_SHOW).map(u => card(u.id, h("div", { class: "muted" },
+      h("b", {}, `ros ${fmt(u.p.ros)}`), ` · ${fmt(u.lm)} min L5 · over ${u.over.map(q => `${short(q.name)} +${fmt(u.p.ros - q.ros)}`).join(", ")}`,
+      u.p.pre == null ? " · no preseason projection, so ros is his raw rate so far (small sample, S1)" : ""))) :
+      h("p", { class: "muted" }, "None clear the bar."),
+    out.length > UPG_SHOW ? h("div", { class: "muted" }, `Also: ${out.slice(UPG_SHOW).map(u => `${u.p.name} (ros ${fmt(u.p.ros)})`).join(", ")}`) : null];
+}
+
+function newsFor(id) {
+  const items = DATA.sections.mine_news.filter(n => n.ids.includes(Number(id)));
+  if (!items.length) return null;
+  return h("details", {}, h("summary", {}, `News (24h): ${items.length}`),
+    items.map(n => h("div", { class: "news" }, n.link ? h("a", { href: n.link, target: "_blank", rel: "noopener" }, n.headline) : n.headline,
+      ` (${n.source}) `, n.body || "")));
+}
+
+// Two pages (tap a tab or swipe): 0 = matchup, past weeks, roster; 1 = pickups, upgrades, caution, search.
+// The open page is remembered per browser; each page keeps its own scroll position.
+const PAGE_KEY = "page-v1", SWIPE_PX = 60, EDGE_PX = 24;  // edge touches are left to the browser's back swipe
+let PAGE = location.hash === "#moves" ? 1 : location.hash === "#team" ? 0 :  // a #moves / #team link opens that page
+  (() => { try { return localStorage.getItem(PAGE_KEY) === "1" ? 1 : 0; } catch { return 0; } })();
+const pageY = [0, 0];
+function showPage(n) {
+  const pages = document.querySelectorAll("#app > .page"), prev = PAGE;
+  if (pages.length !== 2) return;
+  if (n !== prev) pageY[prev] = window.scrollY;
+  PAGE = n;
+  try { localStorage.setItem(PAGE_KEY, String(n)); } catch {}
+  pages.forEach((el, i) => { el.hidden = i !== n; el.classList.remove("in-l", "in-r"); });
+  document.querySelectorAll(".tabs [role=tab]").forEach((el, i) => el.setAttribute("aria-selected", String(i === n)));
+  if (n !== prev) {
+    void pages[n].offsetWidth;  // restart the slide animation
+    pages[n].classList.add(n > prev ? "in-r" : "in-l");
+    window.scrollTo(0, pageY[n]);
+  }
+}
+document.querySelectorAll(".tabs [role=tab]").forEach((el, i) => el.addEventListener("click", () => showPage(i)));
+{
+  const app = document.getElementById("app");
+  let sw = null;
+  app.addEventListener("touchstart", e => {
+    const tc = e.touches[0];
+    sw = e.touches.length === 1 && tc.clientX > EDGE_PX && tc.clientX < innerWidth - EDGE_PX &&
+      !e.target.closest(".wk, .tablewrap, input, select") ? { x: tc.clientX, y: tc.clientY } : null;
+  }, { passive: true });
+  app.addEventListener("touchend", e => {
+    if (!sw) return;
+    const tc = e.changedTouches[0], dx = tc.clientX - sw.x, dy = tc.clientY - sw.y;
+    sw = null;
+    if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > 2 * Math.abs(dy)) showPage(dx < 0 ? 1 : 0);
+  }, { passive: true });
+}
+const page = (...kids) => { const el = h("div", { class: "page", role: "tabpanel" }); fill(el, ...kids); return el; };
+
+function render() {
+  const meta = META, sec = DATA.sections, snapH = ageH(meta.snapshot_at), mu = meta.matchup;
+  const ov = ovLive();
+  // My roster = snapshot "mine", adjusted by overlay edits.
+  const mine = sec.mine.filter(id => statusOf(id) === "mine")
+    .concat(Object.keys(ov).filter(id => ov[id].status === "mine" && !sec.mine.includes(Number(id))).map(Number));
+  const tmin = sec.tmin.filter(t => statusOf(t.id) === "fa");
+  fill(document.getElementById("fresh"),
+    h("span", {}, "Built"), h("span", {}, ago(meta.built_at)),
+    h("span", {}, "Rosters"), h("span", {}, `snapshot ${ago(meta.snapshot_at)}`, snapH > STALE_H ? h("span", { class: "chip amber" }, " ⚠️ stale") : null),
+    mu ? [h("span", {}, "Matchup"), h("span", {}, h("b", {}, `${fmt(mu.me.pts)}–${fmt(mu.opp.pts)}`), ` vs ${mu.opp.name} (wk ${mu.period}, as of snapshot)`)] : null,
+    h("span", {}, "Box scores"), h("span", {}, `thru ${meta.box_thru || "—"}`),
+    h("span", {}, "Injury report"), h("span", {}, meta.report_time ? new Date(meta.report_time).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "none found"));
+
+  const app = document.getElementById("app");
+  const search = h("input", { type: "search", placeholder: "Search any player…", "aria-label": "Search players", value: QUERY });
+  const results = h("div", {});
+  const runSearch = () => {
+    QUERY = search.value;
+    const q = QUERY.trim().toLowerCase();
+    results.replaceChildren();
+    if (q.length < 2) return;
+    Object.entries(DATA.players).filter(([, p]) => p.name.toLowerCase().includes(q))
+      .sort((a, b) => (b[1].gp - a[1].gp)).slice(0, 8).forEach(([id]) => results.append(card(id)));
+  };
+  search.addEventListener("input", runSearch);
+  runSearch();
+
+  const own = s => h("span", { class: `chip ${s === "fa" || !s ? "fa" : s}` }, s === "mine" ? "mine" : s === "rostered" ? "rostered" : s ? "FA" : "FA · deep");
+  const TOUT_SHOW = 6;  // candidates listed per out player; the rest go on one "Also" line
+  const signed = d =>d > 0 ? `+${d}` : `${d}`;
+  const toutGroup = o => h("div", { class: "tout" },
+    h("div", {}, h("span", { class: "who" }, `${o.name} `), h("span", { class: "muted" }, `${o.team} · ${o.pos.join("/")} `),
+      h("span", { class: "chip Out" }, "⛔ Out"), " ", o.long ? h("span", { class: "chip amber" }, "LONG") : null, " ", own(o.status)),
+    h("div", { class: "muted" }, [
+      o.gp ? `${o.min_all} min (${o.gp} GP) · L3 ${o.l3}` : `${o.min} min (${o.min_src === "season" ? "ESPN season" : "proj"}, 0 GP logged)`,
+      o.missed ? `missed ${o.missed} team game${o.missed > 1 ? "s" : ""}` : null, o.reason].filter(Boolean).join(" · ")),
+    !o.gp && o.missed ? h("div", { class: "muted" }, "Out all season so far: teammates' minutes already reflect his absence, no bump expected.") : null,
+    o.cands.length ? h("ol", {}, o.cands.slice(0, TOUT_SHOW).map(c => {
+      const mn = c.min_all ?? c.min;
+      // a change needs games both with and without him; with only one side it just repeats his season minutes
+      const wo = c.wo_n && c.w_n ? ` · ${signed(Math.round((c.wo - c.w) * 10) / 10)} min w/o him (${c.wo_n} g vs ${c.w_n})` : "";
+      return h("li", {}, h("b", {}, c.name), " ", own(c.status), " ",
+        c.est != null ? h("span", { class: "chip", title: "Backtest estimate of his minutes change, games 1–3 of the absence" }, `est ${signed(c.est)} min`) : null, " ",
+        h("span", { class: "muted" }, `${c.gap ? `${c.slot} #${c.gap}` : "same pos"}${mn != null ? ` · ${mn} min` : ""}${wo}${DATA.players[c.id]?.gp ? ` · FPPG ${fmt(DATA.players[c.id].fppg)} · L5 ${fmt(DATA.players[c.id].l5)}` : ""}${c.own != null ? ` · own ${c.own}%` : ""}`));
+    })) : h("p", { class: "muted" }, "No healthy teammate at his spots on the depth chart."),
+    o.cands.length > TOUT_SHOW ? h("div", { class: "muted" }, `Also: ${o.cands.slice(TOUT_SHOW).map(c => c.name).join(", ")}`) : null);
+  const moves = tmin.length + upgrades(mine).out.length;
+  document.querySelectorAll(".tabs [role=tab]")[1].replaceChildren("Moves", moves ? h("span", { class: "count" }, moves) : "");
+  fill(app, page(
+    matchupSection(mine),
+    pastWeeks(),
+    h("h2", {}, "My roster", h("span", { class: "count" }, mine.length), Object.keys(ov).length ? h("button", { class: "btn", type: "button",
+      onclick: () => { ovWrite({}); render(); } }, `Reset ${Object.keys(ov).length} edit(s)`) : null),
+    legend(),
+    mine.map(id => card(id, newsFor(id)))), page(
+    h("h2", {}, "🎯 Pickups · T-MIN", h("span", { class: "count" }, tmin.length), snapH > STALE_H ? h("span", { class: "chip amber" }, "⚠️ verify FA in ESPN app") : null),
+    h("p", { class: "muted" }, "Last-2-game minutes ≥ +6 over his season average. Backtest: ~2× the odds of a weekly burst (OR 2.05, rank 80–200). Sorted by L5 FPPG. Check W1/W4 before adding."),
+    tmin.length ? tmin.map(t => card(t.id, h("div", { class: "muted" }, `Fired ${t.fired}`))) : h("p", { class: "muted" }, "None."),
+    upgradesSection(mine, snapH),
+    h("h2", {}, "⚠️ Caution · T-RET", h("span", { class: "count" }, sec.tret.length)),
+    h("p", { class: "muted" }, "First game back after ≥5 missed. Backtest: ~0.4× burst odds. Rule I2: count him at ~75% for 2 weeks."),
+    sec.tret.length ? h("ul", { class: "plain" }, sec.tret.map(t => h("li", {}, `${DATA.players[t.id]?.name || t.id} (${t.mine ? "mine" : "FA"}), back ${t.fired}`,
+      DATA.players[t.id] ? h("span", { class: "muted" }, ` · ${statLine(DATA.players[t.id])}`) : null))) : h("p", { class: "muted" }, "None."),
+    h("details", {}, h("summary", {}, `Info only: T-OUT (${sec.tout.length}) and T-START (${sec.tstart.length}). No lift in the backtest`),
+      h("p", { class: "muted" }, "Player averaging ≥24 min listed Out, then teammates who may absorb his minutes. Order (heuristic): rank among healthy players at his ESPN depth-chart spots (SG #1 = top healthy SG now), then more of his spots covered, then minutes (minutes without him once ≥3 such games). Newly out (first 3 games): sorted by est = share of his minutes by depth rank and minutes, fit on 2025-26 (backups under 20 min gain, starters ~0). Beat no-change out of time, but rough: error ~6.6 min, top pick right 16%. LONG = report reason suggests multi-week."),
+      sec.tout.length ? sec.tout.map(toutGroup) : h("p", { class: "muted" }, "None."),
+      h("p", { class: "muted" }, "T-START: first start after ≥5 straight bench games."),
+      h("ul", { class: "plain" }, sec.tstart.map(id => h("li", {}, DATA.players[id]?.name || id)))),
+    h("h2", {}, "Search"), search, results));
+  showPage(PAGE);
+}
+
+async function load() {
+  try {
+    META = await (await fetch(`meta.json?t=${Date.now()}`, { cache: "no-store" })).json();
+    BUILD = META.build_id;
+    DATA = await (await fetch(`index.json?v=${BUILD}`)).json();
+    render();
+  } catch (e) {
+    document.getElementById("app").replaceChildren(h("p", { class: "err" }, `Couldn't load data: ${e.message}`));
+  }
+}
+document.getElementById("reload").addEventListener("click", load);
+load();
+</script>
+</body>
+</html>
